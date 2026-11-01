@@ -1,7 +1,7 @@
 import { put, list } from '@vercel/blob';
 
 // Newest-first ordering trick: blob listings come back alphabetically,
-// so we name files with (BIG_NUMBER - timestamp). Newest sorts first.
+// so files are named (BIG_NUMBER - timestamp). Newest sorts first.
 const BIG = 9999999999999;
 const keyFor = (ts) => String(BIG - ts).padStart(13, '0');
 
@@ -13,7 +13,7 @@ const num = (v) => {
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, Authorization');
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   try {
@@ -27,17 +27,21 @@ export default async function handler(req, res) {
 }
 
 async function handlePost(req, res) {
-  // Endpoint is open by default. Set PLANT_API_KEY in Vercel to lock it down.
+  // Open by default. Set PLANT_API_KEY in Vercel to require a key.
+  // Accepts either "x-api-key: KEY" or "Authorization: Bearer KEY".
   const required = process.env.PLANT_API_KEY;
-  if (required && req.headers['x-api-key'] !== required) {
-    return res.status(401).json({ error: 'Bad or missing x-api-key' });
+  const given =
+    req.headers['x-api-key'] ||
+    (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  if (required && given !== required) {
+    return res.status(401).json({ error: 'Bad or missing API key' });
   }
 
   let fields = {};
   let image = null;
 
   if (Buffer.isBuffer(req.body)) {
-    // Raw JPEG body (Content-Type: application/octet-stream), values in query string
+    // Raw JPEG body (Content-Type: application/octet-stream), values in the query string
     fields = req.query;
     image = req.body.length ? req.body : null;
   } else if (req.body && typeof req.body === 'object') {
@@ -66,6 +70,7 @@ async function handlePost(req, res) {
     humidity: num(fields.humidity),
     soil_moisture: num(fields.soil_moisture ?? fields.soil),
     light: num(fields.light),
+    ai_message: fields.ai_message ? String(fields.ai_message).slice(0, 500) : null,
     image: imageUrl,
   };
 

@@ -13,11 +13,9 @@
     --mint: #e6f2e3;
     --paper: #fbfdf9;
     --leaf: #1f4d3a;
-    --leaf-soft: #4f8a6b;
     --butter: #ffd966;
     --sky: #8fcdf2;
     --blush: #f6a9b8;
-    --clay: #c98b5e;
     --ink: #20342b;
     --muted: #5f7a6c;
   }
@@ -26,7 +24,6 @@
       --mint: #14241c;
       --paper: #1c3126;
       --leaf: #bfe8cf;
-      --leaf-soft: #7fc29c;
       --ink: #e8f4ec;
       --muted: #94b3a2;
     }
@@ -36,13 +33,12 @@
     margin: 0; background: var(--mint); color: var(--ink);
     font-family: 'Nunito', system-ui, sans-serif; line-height: 1.5;
   }
-  h1, h2, .num { font-family: 'Fredoka', 'Nunito', sans-serif; }
+  h1, .num { font-family: 'Fredoka', 'Nunito', sans-serif; }
   main { max-width: 960px; margin: 0 auto; padding: 24px 18px 56px; }
   header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   h1 { margin: 0; font-size: 1.6rem; color: var(--leaf); font-weight: 600; }
   #seen { color: var(--muted); font-size: .95rem; }
 
-  /* Hero: the plant's mood */
   .hero {
     display: grid; grid-template-columns: 220px 1fr; gap: 28px; align-items: center;
     background: var(--paper); border-radius: 36px; padding: 28px; margin: 20px 0;
@@ -50,16 +46,18 @@
   .pot { width: 100%; max-width: 220px; justify-self: center; }
   .mood-line { font-family: 'Fredoka'; font-size: 2rem; margin: 0 0 6px; color: var(--leaf); font-weight: 500; }
   .mood-sub { margin: 0; color: var(--muted); font-size: 1.05rem; max-width: 42ch; }
+  .bubble {
+    background: var(--butter); color: #20342b; font-weight: 600;
+    border-radius: 20px 20px 20px 6px; padding: 12px 16px; margin: 14px 0 0; max-width: 46ch;
+  }
   .sprout { transform-origin: 100px 118px; animation: sway 4s ease-in-out infinite; }
   @keyframes sway { 50% { transform: rotate(3deg); } }
   @media (prefers-reduced-motion: reduce) { .sprout { animation: none; } }
 
   .grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; }
-  .photo {
-    background: var(--paper); border-radius: 28px; padding: 12px; overflow: hidden;
-  }
+  .photo { background: var(--paper); border-radius: 28px; padding: 12px; overflow: hidden; margin: 0; }
   .photo img { width: 100%; display: block; border-radius: 18px; aspect-ratio: 4/3; object-fit: cover; background: var(--mint); }
-  .photo p { margin: 8px 6px 2px; color: var(--muted); font-size: .9rem; }
+  .photo figcaption { margin: 8px 6px 2px; color: var(--muted); font-size: .9rem; }
 
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .stat { border-radius: 22px; padding: 14px 16px; color: #20342b; }
@@ -69,12 +67,9 @@
   .temp { background: var(--blush); } .hum { background: var(--sky); }
   .soil { background: #d6b08c; } .light { background: var(--butter); }
 
-  .empty { text-align: center; padding: 40px 16px; color: var(--muted); }
-  code { background: var(--paper); padding: 2px 6px; border-radius: 6px; }
-
   @media (max-width: 720px) {
     .hero { grid-template-columns: 1fr; text-align: center; padding: 22px; }
-    .mood-sub { margin: 0 auto; }
+    .mood-sub, .bubble { margin-left: auto; margin-right: auto; }
     .grid { grid-template-columns: 1fr; }
   }
 </style>
@@ -90,8 +85,8 @@
     <svg class="pot" viewBox="0 0 200 200" role="img" aria-label="Plant in a pot with a face">
       <g class="sprout">
         <path d="M100 118 C100 90 100 70 100 52" stroke="#4f8a6b" stroke-width="7" fill="none" stroke-linecap="round"/>
-        <path id="leafL" d="M100 78 C70 78 52 62 50 40 C76 38 98 52 100 78Z" fill="#6fb88a"/>
-        <path id="leafR" d="M100 64 C128 64 146 48 148 28 C122 26 102 40 100 64Z" fill="#8fd1a4"/>
+        <path d="M100 78 C70 78 52 62 50 40 C76 38 98 52 100 78Z" fill="#6fb88a"/>
+        <path d="M100 64 C128 64 146 48 148 28 C122 26 102 40 100 64Z" fill="#8fd1a4"/>
       </g>
       <path d="M52 118 H148 L138 184 Q137 190 130 190 H70 Q63 190 62 184Z" fill="#c98b5e"/>
       <rect x="46" y="108" width="108" height="20" rx="10" fill="#d9a074"/>
@@ -100,14 +95,15 @@
     <div>
       <p class="mood-line" id="moodLine">Hello!</p>
       <p class="mood-sub" id="moodSub">Once your ESP32 sends a reading, I'll tell you how I'm feeling.</p>
+      <p class="bubble" id="aiMsg" hidden></p>
     </div>
   </section>
 
   <div id="content" hidden>
     <div class="grid">
-      <figure class="photo" style="margin:0">
+      <figure class="photo">
         <img id="photo" alt="Latest photo of the plant">
-        <p id="photoTime"></p>
+        <figcaption id="photoTime"></figcaption>
       </figure>
       <div class="stats">
         <div class="stat temp"><div class="lbl">Temperature</div><div class="num" id="t">–</div><svg id="s-temp" viewBox="0 0 100 34" preserveAspectRatio="none"></svg></div>
@@ -143,15 +139,16 @@ function mood(r) {
   if (r.soil_moisture !== null && r.soil_moisture < 25)
     return ['thirsty', "I'm thirsty!", 'My soil is getting dry. A little water would be lovely.'];
   if (r.temperature !== null && (r.temperature > 33 || r.temperature < 10))
-    return ['uneasy', r.temperature > 33 ? "It's toasty in here" : "Brr, chilly", `It's ${fmt(r.temperature, '°C')} around me. Somewhere a bit milder would help.`];
-  if (r.light !== null && r.light < 50 && new Date(r.ts).getHours() >= 7 && new Date(r.ts).getHours() < 19)
+    return ['uneasy', r.temperature > 33 ? "It's toasty in here" : 'Brr, chilly', `It's ${fmt(r.temperature, '°C')} around me. Somewhere a bit milder would help.`];
+  const hr = new Date(r.ts).getHours();
+  if (r.light !== null && r.light < 50 && hr >= 7 && hr < 19)
     return ['sleepy', "It's a bit dim", "I'm not getting much light. Maybe a sunnier spot?"];
   return ['happy', "I'm doing great!", 'Soil, light and air all look good. Thanks for looking after me.'];
 }
 
 function spark(id, values) {
   const el = $(id);
-  const v = values.filter((x) => x !== null && x !== undefined).reverse(); // oldest → newest
+  const v = values.filter((x) => x !== null && x !== undefined).reverse(); // oldest to newest
   if (v.length < 2) { el.innerHTML = ''; return; }
   const min = Math.min(...v), max = Math.max(...v), range = max - min || 1;
   const pts = v.map((x, i) => `${(i / (v.length - 1)) * 100},${30 - ((x - min) / range) * 26}`).join(' ');
@@ -170,15 +167,18 @@ async function load() {
   try {
     const res = await fetch('/api/readings?limit=48', { cache: 'no-store' });
     const data = await res.json();
-    if (!Array.isArray(data) || !data.length) {
-      $('face').innerHTML = faces.sleepy; return;
-    }
+    if (!Array.isArray(data) || !data.length) { $('face').innerHTML = faces.sleepy; return; }
+
     const r = data[0];
     const [m, line, sub] = mood(r);
     $('face').innerHTML = faces[m];
     $('moodLine').textContent = line;
     $('moodSub').textContent = sub;
     $('seen').textContent = `Last update ${ago(r.ts)}`;
+
+    const msg = data.find((d) => d.ai_message);
+    $('aiMsg').hidden = !msg;
+    if (msg) $('aiMsg').textContent = msg.ai_message;
 
     $('t').textContent = fmt(r.temperature, '°C');
     $('h').textContent = fmt(r.humidity, '%', 0);
