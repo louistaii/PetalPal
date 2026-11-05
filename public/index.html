@@ -64,6 +64,10 @@
   .stat .num { font-size: 2rem; font-weight: 500; line-height: 1.1; }
   .stat .lbl { font-weight: 700; font-size: .95rem; }
   .stat svg { width: 100%; height: 34px; margin-top: 6px; }
+  .stat .raw {
+    display: inline-block; margin-top: 4px; padding: 1px 8px; border-radius: 999px;
+    background: rgba(32, 52, 43, .12); font-size: .78rem; font-weight: 700;
+  }
   .temp { background: var(--blush); } .hum { background: var(--sky); }
   .soil { background: #d6b08c; } .light { background: var(--butter); }
 
@@ -109,7 +113,7 @@
         <div class="stat temp"><div class="lbl">Temperature</div><div class="num" id="t">–</div><svg id="s-temp" viewBox="0 0 100 34" preserveAspectRatio="none"></svg></div>
         <div class="stat hum"><div class="lbl">Humidity</div><div class="num" id="h">–</div><svg id="s-hum" viewBox="0 0 100 34" preserveAspectRatio="none"></svg></div>
         <div class="stat soil"><div class="lbl">Soil moisture</div><div class="num" id="m">–</div><svg id="s-soil" viewBox="0 0 100 34" preserveAspectRatio="none"></svg></div>
-        <div class="stat light"><div class="lbl">Light</div><div class="num" id="l">–</div><svg id="s-light" viewBox="0 0 100 34" preserveAspectRatio="none"></svg></div>
+        <div class="stat light"><div class="lbl">Light</div><div class="num" id="l">–</div><span class="raw" id="lRaw" title="Raw sensor value">raw –</span><svg id="s-light" viewBox="0 0 100 34" preserveAspectRatio="none"></svg></div>
       </div>
     </div>
   </div>
@@ -118,6 +122,20 @@
 <script>
 const $ = (id) => document.getElementById(id);
 const fmt = (v, unit, d = 1) => (v === null || v === undefined ? '–' : `${Number(v).toFixed(d).replace(/\.0+$/, '')}${unit}`);
+
+// Light levels, classified from the raw sensor value.
+// Each entry is [upper limit (exclusive), label]. Edit these to tune.
+const LIGHT_LEVELS = [
+  [200, 'Dark'],
+  [400, 'Dim'],
+  [600, 'Ambient'],
+  [3000, 'Bright'],
+  [Infinity, 'Too bright'],
+];
+function lightLabel(raw) {
+  if (raw === null || raw === undefined) return '–';
+  return LIGHT_LEVELS.find(([max]) => raw < max)[1];
+}
 
 const faces = {
   happy: `<circle cx="84" cy="150" r="5" fill="#20342b"/><circle cx="116" cy="150" r="5" fill="#20342b"/>
@@ -141,7 +159,7 @@ function mood(r) {
   if (r.temperature !== null && (r.temperature > 33 || r.temperature < 10))
     return ['uneasy', r.temperature > 33 ? "It's toasty in here" : 'Brr, chilly', `It's ${fmt(r.temperature, '°C')} around me. Somewhere a bit milder would help.`];
   const hr = new Date(r.ts).getHours();
-  if (r.light !== null && r.light < 50 && hr >= 7 && hr < 19)
+  if (r.light !== null && r.light < 200 && hr >= 7 && hr < 19)
     return ['sleepy', "It's a bit dim", "I'm not getting much light. Maybe a sunnier spot?"];
   return ['happy', "I'm doing great!", 'Soil, light and air all look good. Thanks for looking after me.'];
 }
@@ -183,7 +201,8 @@ async function load() {
     $('t').textContent = fmt(r.temperature, '°C');
     $('h').textContent = fmt(r.humidity, '%', 0);
     $('m').textContent = fmt(r.soil_moisture, '%', 0);
-    $('l').textContent = fmt(r.light, ' lx', 0);
+    $('l').textContent = lightLabel(r.light);
+    $('lRaw').textContent = `raw ${fmt(r.light, '', 0)}`;
     spark('s-temp', data.map((d) => d.temperature));
     spark('s-hum', data.map((d) => d.humidity));
     spark('s-soil', data.map((d) => d.soil_moisture));
